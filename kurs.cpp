@@ -2,8 +2,10 @@
 //#include "functions.h"
 #include <cstring>
 #include <ncurses.h>
+#include <stdlib.h>
 using namespace std;
-
+#define BOARDX 16
+#define BOARDY 8
 
 class figure {
 public:
@@ -61,16 +63,16 @@ public:
 		theq.setxy(6, 7);
 		thek.setxy(8, 7);
 	}
-	void show() {	
+	void show(WINDOW * win) {	
 		for(int i = 0; i < 8; i++)
-			mvaddch(p[i].y, p[i].x, p[i].symbol);
+			mvwaddch(win, p[i].y, p[i].x, p[i].symbol);
 		for(int i = 0; i < 2; i++) {
-			mvaddch(b[i].y, b[i].x, b[i].symbol);
-			mvaddch(r[i].y, r[i].x, r[i].symbol);
-			mvaddch(h[i].y, h[i].x, h[i].symbol);
+			mvwaddch(win, b[i].y, b[i].x, b[i].symbol);
+			mvwaddch(win, r[i].y, r[i].x, r[i].symbol);
+			mvwaddch(win, h[i].y, h[i].x, h[i].symbol);
 		}
-		mvaddch(theq.y, theq.x, theq.symbol);
-		mvaddch(thek.y, thek.x, thek.symbol);	
+		mvwaddch(win, theq.y, theq.x, theq.symbol);
+		mvwaddch(win, thek.y, thek.x, thek.symbol);	
 	}	
 };
 
@@ -93,16 +95,16 @@ public:
 		theq.setxy(6, 0);
 		thek.setxy(8, 0);
 	}
-	void show() {	
+	void show(WINDOW * win) {	
 		for(int i = 0; i < 8; i++)
-			mvaddch(p[i].y, p[i].x, p[i].symbol | A_BOLD);
+			mvwaddch(win, p[i].y, p[i].x, p[i].symbol | A_BOLD);
 		for(int i = 0; i < 2; i++) {
-			mvaddch(b[i].y, b[i].x, b[i].symbol | A_BOLD);
-			mvaddch(r[i].y, r[i].x, r[i].symbol | A_BOLD);
-			mvaddch(h[i].y, h[i].x, h[i].symbol | A_BOLD);
+			mvwaddch(win, b[i].y, b[i].x, b[i].symbol | A_BOLD);
+			mvwaddch(win, r[i].y, r[i].x, r[i].symbol | A_BOLD);
+			mvwaddch(win, h[i].y, h[i].x, h[i].symbol | A_BOLD);
 		}
-		mvaddch(theq.y, theq.x, theq.symbol | A_BOLD);
-		mvaddch(thek.y, thek.x, thek.symbol | A_BOLD);	
+		mvwaddch(win, theq.y, theq.x, theq.symbol | A_BOLD);
+		mvwaddch(win, thek.y, thek.x, thek.symbol | A_BOLD);	
 	}	
 };
 
@@ -111,33 +113,71 @@ class game {
 	playerBlack pb;
 public:
 	void play() {
-	chtype c;
-	initscr();
+
+	
+	WINDOW * board;
+	WINDOW * msg;
+	int c, x=8, y=6, loop = 1;
+	char status[] = {"Hello bro"};
+	
+	if(!(initscr())){
+   		fprintf(stderr,"type: initscr() failed\n\n");
+  		 exit (1);
+	}
 	cbreak(); 
 	noecho();
-	keypad(scr, TRUE);
-
-	pb.show();
-	pw.show();
-	WINDOW * scr = newwin(5,COLS,15,0);		
-	box(scr, 0 , 0);
-	mvwaddstr(scr, 1, 1, "White's turn!");
-	wnoutrefresh(stdscr);
-	wnoutrefresh(scr);
-	doupdate();
 	
-	for(;;)
-	{
-		switch (c)
-		{
-		case KEY_UP:
-		printw("dfg");
-		break;
-		}	 
-	}	
+	msg = newwin(0, 0, 15, 0);
+	box(msg, 0, 0);
+	mvwprintw(msg, 1, COLS/2 - strlen(status)/2, status);
+	wrefresh(msg);
+	
+	board = newwin(BOARDY, BOARDX, 3, COLS/2-BOARDX/2);
+	keypad(board, TRUE);
+	pb.show(board);
+	pw.show(board);
 
-	endwin();
+	wmove(board, y, x);
+
+	while( loop ){
+		c = wgetch(board);
+		switch(c) {
+		case KEY_UP:
+		case 'w':
+		(y>0)?(y--):(y=BOARDY-1);
+		wmove(board, y,x);
+		break;
+		case 's':
+		case KEY_DOWN:
+		(y<BOARDY-1)?(y++):(y=0);
+		wmove(board, y,x);
+		break;
+		case 'a':
+		case KEY_LEFT:
+		(x>0)?(x-=2):(x=BOARDX-2);
+		wmove(board, y,x);
+		break;
+		case 'd':
+		case KEY_RIGHT:
+		(x<BOARDX-2)?(x+=2):(x=0);
+		wmove(board, y,x);
+		break;
+		case 'q':
+		loop = 0;
+		break;
+		case 'e':
+		werase(msg);
+		strcpy(status, "Omg");
+		mvwprintw(msg, 1, COLS/2 - strlen(status)/2, status);
+		break;
+		}
+		wrefresh(msg);
+
+	}	
+	delwin(board);
+	delwin(msg);
 	}
+	
 };
 
 int main(void) {
@@ -145,7 +185,9 @@ int main(void) {
 game thegame;
 
 thegame.play();	
-					
+
 endwin();
+
 return(0);
 }
+
