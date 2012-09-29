@@ -1,24 +1,17 @@
-#include <ncurses.h>
-
+#include <stdio.h>
+#include <ctype.h>
 
 
 
 int main(int argc, char *argv[])
 {	
-	WINDOW *win;
-	initscr();
+
+	int a = 20;
+
+	printf("|%c| |%c|\n", a, toupper(a));
+
 
 		
- 	refresh();
-	
-	win = newwin(10, 10, 10, 10);
-	box(win, 0, 0);
-	
-	wprintw(win, "GFF");
-	wrefresh(win);
-
-	getch();
-	endwin();		
 	return 0;
 }
 
