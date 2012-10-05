@@ -1,206 +1,180 @@
-#include <cstring>
 #include <ncurses.h>
-#include <stdlib.h>
-#include <ctype.h>
-using namespace std;
-#define BOARDX 16
-#define BOARDY 8
 
-class figure {
-protected:
-int x, y;
-int symbol;
+#define BOARDWI 16
+#define BOARDHI 8
+
+WINDOW * Wboard;
+WINDOW * msg;
+WINDOW * in;
+WINDOW * digitRow;
+WINDOW * digitCol;
+
+class figure
+{
+char color;
 public:
-void setxy(int i, int j) {x = i; y = j;}
-int getx(){return x;}
-int gety(){return y;}
-int gets(){return symbol;}
+	figure(char clr) : color(clr) {}
+	~figure() {}
+	virtual chtype getSym() = 0;
+	char getColor() { return color; }
 };
 
 class pawn:public figure {
+
 public:
-pawn(){symbol = 'p'; x = y = 0;}
+	pawn(char clr) : figure(clr) {}
+	~pawn() {}
+	 chtype getSym() { if(this->getColor() == 'W') return 'p'; else return 'P' | A_BOLD; }
+	
 };
 
 class bishop:public figure {
 public:
-bishop(){symbol = 'b'; x = y = 0;}
+	bishop(char clr) : figure(clr) {}
+	~bishop() {}
+	 chtype getSym() { if(this->getColor() == 'W') return 'b'; else return 'B'| A_BOLD;; }
+
 };
 
 class rook:public figure {
 public:
-rook(){symbol = 'r'; x = y = 0;}
+	rook(char clr) : figure(clr) {}
+	~rook() {}
+	 chtype getSym() { if(this->getColor() == 'W') return 'r'; else return 'R'| A_BOLD;; }
+
 };
 
 class knight:public figure {
 public:
-knight(){symbol = 'h'; x = y = 0;}
+	knight(char clr) : figure(clr) {}
+	~knight() {}
+	 chtype getSym() { if(this->getColor() == 'W') return 'h'; else return 'H'| A_BOLD;; }
+
 };
 
 class king:public figure {
 public:
-king(){symbol = 'k'; x = y = 0;}
+	king(char clr) : figure(clr) {}
+	~king() {}
+	 chtype getSym() { if(this->getColor() == 'W') return 'k'; else return 'K'| A_BOLD;; }
+
 };
 
 class queen:public figure {
 public:
-queen(){symbol = 'q'; x = y = 0;}
+	queen(char clr) : figure(clr) {}
+	~queen() {}
+	 chtype getSym() { if(this->getColor() == 'W') return 'q'; else return 'Q'| A_BOLD;; }
+
 };
 
-class player {
-pawn p[8];
-bishop b[2];
-rook r[2];
-knight h[2];
-queen theq;
-king thek;
-bool isBlack;
+class board {
 public:
-void show(WINDOW * win) {	
-	for(int i = 0; i < 8; i++)
-		mvwaddch(win, p[i].gety(), p[i].getx(), (isBlack)?(toupper(p[i].gets())):(p[i].gets()) );
-	for(int i = 0; i < 2; i++) {
-		mvwaddch(win, b[i].gety(), b[i].getx(), (isBlack)?(toupper(b[i].gets())):(b[i].gets()) );
-		mvwaddch(win, r[i].gety(), r[i].getx(), (isBlack)?(toupper(r[i].gets())):(r[i].gets()) );
-		mvwaddch(win, h[i].gety(), h[i].getx(), (isBlack)?(toupper(h[i].gets())):(h[i].gets()) );
+	figure * fBoard[8][8];
+	
+	board() {
+		for (int i = 0; i < 8; i++) 
+			for (int j = 0; j < 8; j++) 
+				fBoard[i][j] = 0;
+			//Place black figures
+			for (int i = 0; i < 8; i++) 
+				fBoard[1][i] = new pawn('B');
+			
+			fBoard[0][0] = new rook('B');
+			fBoard[0][1] = new knight('B');
+			fBoard[0][2] = new bishop('B');
+			fBoard[0][3] = new queen('B');
+			fBoard[0][4] = new king('B');
+			fBoard[0][5] = new bishop('B');
+			fBoard[0][6] = new knight('B');
+			fBoard[0][7] = new rook('B');
+		
+			//Place white figures
+			for (int i = 0; i < 8; i++) 
+				fBoard[6][i] = new pawn('W');
+			
+			fBoard[7][0] = new rook('W');
+			fBoard[7][1] = new knight('W');
+			fBoard[7][2] = new bishop('W');
+			fBoard[7][3] = new queen('W');
+			fBoard[7][4] = new king('W');
+			fBoard[7][5] = new bishop('W');
+			fBoard[7][6] = new knight('W');
+			fBoard[7][7] = new rook('W');
 	}
-	mvwaddch(win, theq.gety(), theq.getx(), (isBlack)?(toupper(theq.gets())):(theq.gets()) );
-	mvwaddch(win, thek.gety(), thek.getx(), (isBlack)?(toupper(thek.gets())):(thek.gets()) );	
-}
 
-int isExists(int y, int x) {
-	for (int i = 0; i < 8; i++)
-		if ( p[i].gety() == y && p[i].getx() == x )
-			return p[i].gets();
-	for (int i = 0; i < 2; i++) {
-		if(b[i].gety() == y && b[i].getx() == x)
-			return b[i].gets();
-		if(r[i].gety() == y && r[i].getx() == x)
-			return r[i].gets();
-		if(h[i].gety() == y && h[i].getx() == x)
-			return h[i].gets();
-	}
-		if (theq.gety() == y && theq.getx() == x)
-			return theq.gets();
-		if (thek.gety() == y && thek.getx() == x)
-			return thek.gets();
-	return -1;
-}
-
-player() {
-		for(int i = 0; i < 8; i++)
-			p[i].setxy(i*2, (isBlack)?(1):(6) );
-		for(int i = 0; i < 2; i++) {
-			b[i].setxy(4+i*6, (isBlack)?(0):(7) );
-			r[i].setxy(i*14, (isBlack)?(0):(7) );
-			h[i].setxy(2+i*10, (isBlack)?(0):(7) );
+	~board() {
+		for (int i = 0; i < 8; i++) {
+			for (int j = 0; j < 8; j++) {
+				delete fBoard[i][j];
+				fBoard[i][j] = 0;
+			}
 		}
-		theq.setxy(6, (isBlack)?(0):(7) );
-		thek.setxy(8, (isBlack)?(0):(7) );
 	}
-void setClr(bool x) { isBlack = x; }
 
+	void print() {
+			
+		for(int i = 0; i < 8; i++)
+			for(int j = 0; j < 8; j++) 
+				if(fBoard[j][i]!=0)
+					mvwaddch(Wboard, j, i*2, fBoard[j][i]->getSym());
+
+
+		for(int i = 0 ; i < 8; i++) {
+			wprintw(digitRow, "%d ", i+1);
+			wprintw(digitCol, "%d|", 8-i);
+		}
+	wrefresh(Wboard);	
+	wrefresh(digitRow);	
+	wrefresh(digitCol);
+	}
+	
 };
 
 class game {
-	player pw, pb;
+	board ChessBoard;
+	char playerColor;
 public:
-	void play() {
+	game() : playerColor('W') {}
+	~game() {}
 
-	pb.setClr(1);
-	pw.setClr(0);
-	WINDOW * board;
-	WINDOW * msg;
-	int c, x=8, y=6, loop = 1, sy = 0, sx = 0, ssy, ssx, num = 0; 
-	int s = 0;
-	bool turn = 1, step = 0;//turn = 1 (White's turn)
-	char * status[] = {"White's turn", "You have no any figure here", "Black's turn"};
-
-	if(!(initscr())){
-   		fprintf(stderr,"type: initscr() failed\n\n");
-  		 exit (1);
+	void start() {
+		initscr();
+		Wboard = newwin(BOARDHI, BOARDWI, 3, 13);
+		in = newwin(10,11,3,30);
+		digitRow = newwin(1,16,2,13);
+		digitCol = newwin(8,2,3,11);
+		do {
+			getNextMove(ChessBoard.fBoard);
+			reverseColor();
+		} while(1);
+		endwin();
 	}
-	cbreak(); 
-	noecho();
 	
-	msg = newwin(0, 0, 15, 0);
-	box(msg, 0, 0);
-	mvwprintw(msg, 1, COLS/2 - strlen(status[num])/2, status[num]);
-	wrefresh(msg);
+	void getNextMove(figure * gBoard[8][8]) {
+	int startM, endM, startX, startY, endX, endY;
+	werase(in);
+	ChessBoard.print();
 	
-	board = newwin(BOARDY, BOARDX, 3, COLS/2-BOARDX/2);
-	keypad(board, TRUE);
+	waddstr(in, "StartXY:");
+	wscanw(in, "%d", &startM);
 	
-	for (int i = 0; i < BOARDX; i++)
-		for (int j = 0; j < BOARDY; j++)
-			mvwaddch(board, j, i, ' ');
+	startX = startM / 10 - 1;
+	startY = startM % 10 - 1;
 	
-	werase(board);	
-	werase(msg);
+	waddstr(in, "EndXY:");	
+	wscanw(in, "%d", &endM);
 	
-	pb.show(board);
-	pw.show(board);
+	endX = endM / 10 - 1;
+	endY = endM % 10 - 1;
 
-	wmove(board, y, x);
+	gBoard[7-endY][endX]= gBoard[7-startY][startX];
+	gBoard[startY][startX] = 0;
+	}
 
-	while( loop ){
-		c = wgetch(board);
-		switch(c) {
-		case KEY_UP:
-		(y>0)?(y--):(y=BOARDY-1);
-		wmove(board, y,x);
-		break;
-		case KEY_DOWN:
-		(y<BOARDY-1)?(y++):(y=0);
-		wmove(board, y,x);
-		break;
-		case KEY_LEFT:
-		(x>0)?(x-=2):(x=BOARDX-2);
-		wmove(board, y,x);
-		break;
-		case KEY_RIGHT:
-		(x<BOARDX-2)?(x+=2):(x=0);
-		wmove(board, y,x);
-		break;
-		case 'q':
-		loop = 0;
-		break;
-		case ' ':
-			if (step) {
-				ssx = x; ssy = y; // start step coord
-				waddch(board, s);
-				mvwaddch(board, sy, sx, ' ');
-				wmove(board, ssy, ssx);
-				turn = !turn;
-				step = !step;
-
-				werase(msg);
-				box(msg, 0, 0);
-				mvwprintw(msg, 1, COLS/2 - strlen(status[num])/2, status[num]);
-				//waddch(msg , s);
-				
-				
-			}//end if
-			else {
-				
-				if (turn) { 
-					num = 2; step = !step;
-				}
-				else {
-					num = 0; step = !step;
-				}
-				sy = y; sx = x; // start step coord
-		
-		
-			}//end else
-		wrefresh(msg);
-		wrefresh(board);
-		break;
-		}//end switch
-	}//end while
-	delwin(board);
-	delwin(msg);
-}//end play
+	void reverseColor() {
+		playerColor = (playerColor=='W')?('B'):('W');
+	}
 	
 };
 
@@ -208,9 +182,7 @@ int main(void) {
 
 game thegame;
 
-thegame.play();	
-
-endwin();
+thegame.start();
 
 return(0);
 }
