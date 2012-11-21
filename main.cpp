@@ -1,6 +1,15 @@
 #include <iostream>
-#include <cstdlib>
+
+#ifdef _WIN32
+	#include <cstdlib>
+#else
+	#include <stdio.h>
+#endif
+			 
 using namespace std;
+
+void MyClear(void);
+void MyPause(void);
 class figure
 {
 char color;
@@ -273,11 +282,8 @@ public:
 	}
 
 	void Print() {
-		#ifdef _WIN32
-		system("CLS");
-		#else
-		printf ("%c[2J", 27);
-		#endif
+		MyClear();
+	
 		const int kiSquareWidth = 4;
 		const int kiSquareHeight = 3;
 		for (int iRow = 0; iRow < 8*kiSquareHeight; ++iRow) {
@@ -468,7 +474,7 @@ public:
 										&& (f->GetColor() != playerColor) 
 										&& f->IsLegalMove(iRow, iCol, iEndRow, iEndCol, board)) {
 											cout << "You are under attack!" << endl;
-											system("PAUSE");
+											MyPause();
 											iRow = 8;
 											iCol = 8;
 								}
@@ -480,7 +486,7 @@ public:
 			}
 			if (!bValidMove) {
 				cout << "Invalid Move!" << endl;
-				system("PAUSE");
+				MyPause();
 			}
 
 		} while (!bValidMove);
@@ -499,10 +505,10 @@ public:
 			if (ChessBoard.IsInCheck(playerColor)) {
 				AlternateTurn();
 				std::cout << "Checkmate, " << playerColor << " Wins!" << std::endl;
-				system("PAUSE");
+				MyPause();
 			} else {
 				std::cout << "Stalemate!" << std::endl;
-				system("PAUSE");
+				MyPause();
 			}
 		}
 		return !bCanMove;
@@ -516,4 +522,20 @@ int main() {
 	game qGame;
 	qGame.Start();
 	return 0;
+}
+void MyClear(){
+	#ifdef _WIN32
+		system("CLS");
+	#else
+		printf ("%c[2J", 27);
+	#endif
+}
+
+void MyPause(){
+	#ifdef _WIN32
+		system("PAUSE");
+	#else
+		cout << "Enter space for continue\n";
+      		while(getchar()!=' '){}
+	#endif
 }
